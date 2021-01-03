@@ -1,0 +1,50 @@
+---
+kind: pipeline
+name: build
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build-runner
+  pull: always
+  image: golang:alpine
+  environment:
+    GOPATH: ""
+    CGO_ENABLED: 0
+  commands:
+  - apk --no-cache add git
+  - git clone https://github.com/drone-runners/drone-runner-docker.git -b v1.6.2
+  - git clone https://github.com/spritsail/drone-runner-go.git
+  - cd drone-runner-docker
+
+  - go mod edit -replace github.com/drone/runner-go=../drone-runner-go
+
+  - go build -ldflags "-extldflags \"-static\"" -o ../release/linux/amd64/drone-runner-docker
+
+- name: build-docker
+  pull: always
+  image: spritsail/docker-build
+  settings:
+    repo: drone-runner-docker-dev
+    dockerfile: drone-runner-docker/docker/Dockerfile.linux.amd64
+
+- name: publish
+  pull: always
+  image: spritsail/docker-publish
+  settings:
+    from: drone-runner-docker-dev
+    repo: spritsail/drone-runner-docker
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+  when:
+    branch:
+    - master
+    event:
+    - push
+
+...
+
