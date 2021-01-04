@@ -27,19 +27,14 @@ steps:
   pull: always
   image: spritsail/docker-build
   settings:
-    repo: drone-runner-docker-dev
     dockerfile: drone-runner-docker/docker/Dockerfile.linux.amd64
 
 - name: publish
   pull: always
   image: spritsail/docker-publish
   settings:
-    from: drone-runner-docker-dev
     repo: spritsail/drone-runner-docker
-    username:
-      from_secret: docker_username
-    password:
-      from_secret: docker_password
+    login: {from_secret: docker_login}
   when:
     branch:
     - master
